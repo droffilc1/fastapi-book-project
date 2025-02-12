@@ -71,6 +71,9 @@ jobs:
             sudo systemctl restart docker
             sleep 3
             
+            echo "🔹 Creating Docker network if it doesn't exist..."
+            docker network create web-network || true
+            
             echo "🔹 Pulling latest Docker image..."
             docker pull ${DOCKER_IMAGE}:latest
             
@@ -86,7 +89,10 @@ jobs:
               ${DOCKER_IMAGE}:latest
             
             echo "🔹 Cleaning up old images..."
-            docker image prune -af
-            
+            docker image prune -af            
+
+            echo "🔹 Reloading Nginx..."
+            sudo systemctl reload nginx            
+
             echo "✅ Deployment successful!"
           EOF
