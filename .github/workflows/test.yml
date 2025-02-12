@@ -44,8 +44,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project-app:${{ github.sha }}
 
   deploy:
     name: Deploy Application
@@ -58,7 +58,7 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project
+          DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project-app
         run: |
           # Setup SSH
           mkdir -p ~/.ssh
@@ -71,9 +71,6 @@ jobs:
             sudo systemctl restart docker
             sleep 3
             
-            echo "🔹 Creating Docker network if it doesn't exist..."
-            docker network create web-network || true
-            
             echo "🔹 Pulling latest Docker image..."
             docker pull ${DOCKER_IMAGE}:latest
             
@@ -84,16 +81,12 @@ jobs:
             echo "🔹 Running new container..."
             docker run -d \
               --name fastapi-container \
-              --network web-network \
               --restart unless-stopped \
               -p 8080:8000 \
               ${DOCKER_IMAGE}:latest
             
             echo "🔹 Cleaning up old images..."
             docker image prune -af
-            
-            echo "🔹 Reloading Nginx..."
-            sudo systemctl reload nginx
             
             echo "✅ Deployment successful!"
           EOF
