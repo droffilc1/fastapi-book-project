@@ -1,9 +1,8 @@
-name: Test and Build Pipeline
+name: CI Pipeline
 
 on:  
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: [ main ]  
 
 jobs:
   test:
