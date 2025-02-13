@@ -32,8 +32,8 @@ db.books = {
     ),
 }
 
-@router.get("/test", status_code=status.HTTP_200_OK)
-async def health_check():
+@router.get("/testing", status_code=status.HTTP_200_OK)
+async def test_deploy():
     return {"status": "OK"}
 
 
