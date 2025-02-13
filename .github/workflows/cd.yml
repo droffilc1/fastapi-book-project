@@ -1,0 +1,42 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Deploy via SSH
+          ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'EOF'
+            echo "🔹 Checking if Docker is running..."
+            sudo systemctl restart docker
+            sleep 3
+            
+            echo "🔹 Pulling latest Docker image..."
+            docker pull ${DOCKER_IMAGE}:${{ github.sha }}
+            
+            echo "🔹 Restarting Docker Compose services..."
+            cd /home/ubuntu/fastapi-book-project
+            docker-compose down
+            docker-compose up -d --force-recreate
+            
+            echo "🔹 Cleaning up old images..."
+            docker image prune -af
+            
+            echo "✅ Deployment successful!"
+          EOF
