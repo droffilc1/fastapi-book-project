@@ -1,14 +1,39 @@
 name: CD Pipeline
 
 on:
-  push:
-    branches: [main]
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 
 jobs:
   deploy:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    name: Deploy
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/fastapi-book-project:${{ github.sha }}
+
       - name: Deploy via SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -20,23 +45,23 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
+
           # Deploy via SSH
           ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST << 'EOF'
             echo "🔹 Checking if Docker is running..."
             sudo systemctl restart docker
             sleep 3
-            
+
             echo "🔹 Pulling latest Docker image..."
             docker pull ${DOCKER_IMAGE}:${{ github.sha }}
-            
+
             echo "🔹 Restarting Docker Compose services..."
             cd /home/ubuntu/fastapi-book-project
             docker-compose down
             docker-compose up -d --force-recreate
-            
+
             echo "🔹 Cleaning up old images..."
             docker image prune -af
-            
+
             echo "✅ Deployment successful!"
           EOF
