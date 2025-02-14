@@ -67,6 +67,7 @@ jobs:
             docker compose down || true
 
             # 🚀 Build and run the new Docker container in detached mode
-            docker compose up -d --build
+            docker compose build --no-cache
+            docker compose up -d
 
             echo "✅ Deployment complete!"  # 🎉 Notify that deployment is finished
