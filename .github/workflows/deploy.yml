@@ -58,9 +58,6 @@ jobs:
             sudo usermod -aG docker $USER
             sudo chmod 666 /var/run/docker.sock
             
-            # ⚙️ Reinitialize shell to apply new group permissions
-            exec sudo su -l $USER
-
             # 🧹 Cleanup: Remove unused Docker resources and shut down existing containers gracefully
             echo "Cleaning ..."
             docker system prune -f || true
